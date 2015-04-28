@@ -99,6 +99,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
+STATIC_ROOT = '/vol/django_server/ddrift_be_img_server/static/'
 STATIC_URL = '/static/'
 
 # Logging
