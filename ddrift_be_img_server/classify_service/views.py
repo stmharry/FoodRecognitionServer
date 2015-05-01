@@ -13,7 +13,7 @@ DJANGO_ROOT = '/vol/django_server'
 CAFFE_ROOT = DJANGO_ROOT + '/caffe'
 CAFFE_PYTHON = CAFFE_ROOT + '/python'
 MODEL_FILE = CAFFE_ROOT + '/models/ddrift/deploy.prototxt'
-PRETRAINED = CAFFE_ROOT + '/models/ddrift/models/caffenet_ddrift_train_1_5_1_iter_500.caffemodel'
+PRETRAINED = CAFFE_ROOT + '/models/ddrift/models/caffenet_ddrift.caffemodel'
 
 import sys
 if CAFFE_PYTHON not in sys.path:
@@ -29,7 +29,7 @@ class ClassifyService(APIView):
       mean = numpy.load('/vol/proto/ddrift_mean_1_5_1.npy'),
       channel_swap = (2,1,0),
       raw_scale = 255,
-      image_dims = (256, 256))
+      image_dims = (227, 227))
   net.set_mode_gpu()
 
   @parser_classes((JSONParser,))
