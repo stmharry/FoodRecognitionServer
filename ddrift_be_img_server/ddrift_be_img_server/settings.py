@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '+x+axsc+6*p37e)vd&-no$e-xz$nj3c^cglfidmbw*81ymr$07'
+SECRET_KEY = '5*!-wr@95*-^833soh3n9w*ia-u9hix+vu=61sqm4z5y-7if6e'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -36,7 +36,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_extensions',
     'rest_framework',
     'classify_service',
 )
@@ -65,13 +64,6 @@ REST_FRAMEWORK = {
     )
 }
 
-IPYTHON_ARGUMENTS = [
-    '--ext', 'django_extensions.management.notebook_extension',
-    '--ext', 'myproject.notebook_extension',
-    "--ip='*'",
-    '--debug',
-]
-
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
@@ -99,26 +91,5 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
-STATIC_ROOT = '/vol/django_server/ddrift_be_img_server/static/'
 STATIC_URL = '/static/'
 
-# Logging
-import sys
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False, 
-    'handlers': {
-        'console':{
-            #'level':'INFO',
-            'class':'logging.StreamHandler',
-            'stream': sys.stdout
-        },
-    },
-    'loggers': {
-        'classify_service.views': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    },
-}
