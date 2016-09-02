@@ -9,24 +9,30 @@ import collections
 import skimage.io
 import sys
 
-RESNET_ROOT = ''  # TODO
-WORKING_DIR_6 = ''  # TODO
-WORKING_DIR_36 = '' # TODO
-GPU_FRAC = 0.5
+RESNET_ROOT = '/home/harry/Repository/FoodRecognitionV2'  # TODO
+WORKING_DIR_CONTENT_TYPE = ''  # '/mnt/data/dish-clean-save/2016-08-16-191753'  # TODO
+WORKING_DIR_FOOD_TYPE = '/mnt/data/dish-clean-save/2016-08-31-005352'  # TODO
+
+GPU_FRAC = 1.0
 BATCH_SIZE = int(32 * GPU_FRAC)
-NUM_TEST_CROPS = 8
+NUM_TEST_CROPS = 4
 TOP_K = 6
 
 if RESNET_ROOT not in sys.path:
     sys.path.append(RESNET_ROOT)
 
-
-from ResNet import Meta, QueueProducer, Preprocess, Batch, Net, ResNet50, Postprocess, Timer
+from ResNet import set_meta, Meta, QueueProducer, Preprocess, Batch, Net, ResNet50, Postprocess, Timer
 
 
 class NetWrapper(object):
     def __init__(self, working_dir):
-        Meta.test(working_dir=working_dir)
+        if not working_dir:
+            return
+
+        meta = Meta.test(working_dir=working_dir)
+        set_meta(meta)
+
+        self.meta = meta
         self.producer = QueueProducer()
         self.preprocess = Preprocess(num_test_crops=NUM_TEST_CROPS)
         self.batch = Batch(batch_size=BATCH_SIZE, num_test_crops=NUM_TEST_CROPS)
@@ -51,8 +57,8 @@ class NetWrapper(object):
                 fetch = self.net.online(**self.blob.kwargs())
                 probs = fetch[self.net.prob.name]
                 for prob in probs:
-                    indices = sorted(xrange(len(Meta.CLASS_NAMES)), key=prob.__getitem__)[:-(TOP_K + 1):-1]
-                    classes = collections.OrderedDict([(Meta.CLASS_NAMES[index], round(prob[index], 4)) for index in indices])
+                    indices = sorted(xrange(len(self.meta.class_names)), key=prob.__getitem__)[:-(TOP_K + 1):-1]
+                    classes = collections.OrderedDict([(self.meta.class_names[index], round(prob[index], 4)) for index in indices])
                     results.append(dict(status='ok', classes=classes))
                 if probs.size == 0:
                     break
@@ -60,18 +66,21 @@ class NetWrapper(object):
         return results
 
 
-class BaseClassifyService(APIView):
+class ContentClassifyService(APIView):
+    NET_WRAPPER = NetWrapper(working_dir=WORKING_DIR_CONTENT_TYPE)
+
     @parser_classes((JSONParser,))
     @renderer_classes((JSONRenderer,))
     def post(self, request, format=None):
-        content = dict(results=self.NET_WRAPPER.get_results(request.data['images']))
-
+        content = dict(results=ContentClassifyService.NET_WRAPPER.get_results(request.data['images']))
         return Response(content)
 
 
-class ClassifyService_6(BaseClassifyService):
-    NET_WRAPPER = NetWrapper(working_dir=WORKING_DIR_6)
+class FoodClassifyService(APIView):
+    NET_WRAPPER = NetWrapper(working_dir=WORKING_DIR_FOOD_TYPE)
 
-
-class ClassifyService_36(BaseClassifyService):
-    NET_WRAPPER = NetWrapper(working_dir=WORKING_DIR_36)
+    @parser_classes((JSONParser,))
+    @renderer_classes((JSONRenderer,))
+    def post(self, request, format=None):
+        content = dict(results=FoodClassifyService.NET_WRAPPER.get_results(request.data['images']))
+        return Response(content)
