@@ -7,26 +7,14 @@ from rest_framework.views import APIView
 
 import collections
 import skimage.io
-import sys
 
-RESNET_ROOT = '/home/harry/Repository/FoodRecognitionV2'  # TODO
-WORKING_DIR_CONTENT_TYPE = ''  # '/mnt/data/dish-clean-save/2016-08-16-191753'  # TODO
-WORKING_DIR_FOOD_TYPE = '/mnt/data/dish-clean-save/2016-08-31-005352'  # TODO
-
-GPU_FRAC = 1.0
-BATCH_SIZE = int(32 * GPU_FRAC)
-NUM_TEST_CROPS = 8
-TOP_K = 6
-
-if RESNET_ROOT not in sys.path:
-    sys.path.append(RESNET_ROOT)
-
+from env import *
 from ResNet import set_meta, Meta, QueueProducer, Preprocess, Batch, Net, ResNet50, Postprocess, Timer
 
 
 class NetWrapper(object):
     def __init__(self, working_dir):
-        if not working_dir:
+        if working_dir is None:
             return
 
         meta = Meta.test(working_dir=working_dir)
@@ -41,7 +29,7 @@ class NetWrapper(object):
 
         with Timer('Building network...'):
             self.producer.blob().func(self.preprocess.test).func(self.batch.test).func(self.net.build)
-            self.blob = self.postprocess.blob(self.net.prob)
+            self.blob = self.postprocess.blob([self.net.prob, self.net.consistency])
             self.net.start(default_phase=Net.Phase.TEST)
 
     def get_results(self, urls):
@@ -55,12 +43,11 @@ class NetWrapper(object):
             results = list()
             while True:
                 fetch = self.net.online(**self.blob.kwargs())
-                probs = fetch[self.net.prob.name]
-                for prob in probs:
+                for (prob, consistency) in zip(*map(fetch.__getitem__, [self.net.prob.name, self.net.consistency.name])):
                     indices = sorted(xrange(len(self.meta.class_names)), key=prob.__getitem__)[:-(TOP_K + 1):-1]
                     classes = collections.OrderedDict([(self.meta.class_names[index], round(prob[index], 4)) for index in indices])
-                    results.append(dict(status='ok', classes=classes))
-                if probs.size == 0:
+                    results.append(dict(status='ok', classes=classes, consistency=round(consistency, 4)))
+                if fetch[self.net.prob.name].size == 0:
                     break
 
         return results
