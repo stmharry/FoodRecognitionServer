@@ -15,7 +15,7 @@ WORKING_DIR_FOOD_TYPE = '/mnt/data/dish-clean-save/2016-08-31-005352'  # TODO
 
 GPU_FRAC = 1.0
 BATCH_SIZE = int(32 * GPU_FRAC)
-NUM_TEST_CROPS = 4
+NUM_TEST_CROPS = 8
 TOP_K = 6
 
 if RESNET_ROOT not in sys.path:
