@@ -40,20 +40,15 @@ class NetWrapper(object):
         urls = request.data.get('images', [])
         num_urls = len(urls)
 
-        flag = True
-        while flag:
-            fetch = self.net.online(**self.blob.kwargs())
-            flag = (fetch[self.net.prob.name].size != 0)
-            if flag:
-                print('Warning, queue not empty')
-
         self.net.online(**self.batch.kwargs(total_size=num_urls, phase=Net.Phase.TEST))
+
         with Timer('ResNet50 running prediction on %d images... ' % num_urls):
             for url in urls:
                 self.net.online(**self.producer.kwargs(image=skimage.io.imread(url)))
 
+            flag = True
             results = list()
-            while True:
+            while flag:
                 fetch = self.net.online(**self.blob.kwargs())
 
                 for (prob, consistency) in zip(*[fetch[value.name] for value in self.blob.values]):
