@@ -12,6 +12,10 @@ from env import *
 from ResNet import set_meta, Meta, QueueProducer, Preprocess, Batch, Net, ResNet50, Postprocess, Timer
 
 
+def _(x):
+    return round(x, 4)
+
+
 class NetWrapper(object):
     def __init__(self, working_dir):
         if working_dir is None:
@@ -32,10 +36,18 @@ class NetWrapper(object):
             self.blob = self.postprocess.blob([self.net.prob, self.net.consistency])
             self.net.start(default_phase=Net.Phase.TEST)
 
-    def get_results(self, urls):
+    def get_results(self, request):
+        urls = request.data.get('images', [])
         num_urls = len(urls)
-        self.net.online(**self.batch.kwargs(total_size=num_urls, phase=Net.Phase.TEST))
 
+        flag = True
+        while flag:
+            fetch = self.net.online(**self.blob.kwargs())
+            flag = (fetch[self.net.prob.name].size != 0)
+            if flag:
+                print('Warning, queue not empty')
+
+        self.net.online(**self.batch.kwargs(total_size=num_urls, phase=Net.Phase.TEST))
         with Timer('ResNet50 running prediction on %d images... ' % num_urls):
             for url in urls:
                 self.net.online(**self.producer.kwargs(image=skimage.io.imread(url)))
@@ -43,12 +55,13 @@ class NetWrapper(object):
             results = list()
             while True:
                 fetch = self.net.online(**self.blob.kwargs())
-                for (prob, consistency) in zip(*map(fetch.__getitem__, [self.net.prob.name, self.net.consistency.name])):
+
+                for (prob, consistency) in zip(*[fetch[value.name] for value in self.blob.values]):
                     indices = sorted(xrange(len(self.meta.class_names)), key=prob.__getitem__)[:-(TOP_K + 1):-1]
-                    classes = collections.OrderedDict([(self.meta.class_names[index], round(prob[index], 4)) for index in indices])
-                    results.append(dict(status='ok', classes=classes, consistency=round(consistency, 4)))
-                if fetch[self.net.prob.name].size == 0:
-                    break
+                    classes = collections.OrderedDict([(self.meta.class_names[index], _(prob[index])) for index in indices])
+                    results.append(dict(status='ok', classes=classes, consistency=_(consistency)))
+
+                flag = (fetch[self.net.prob.name].size != 0)
 
         return results
 
@@ -59,7 +72,7 @@ class ContentClassifyService(APIView):
     @parser_classes((JSONParser,))
     @renderer_classes((JSONRenderer,))
     def post(self, request, format=None):
-        content = dict(results=ContentClassifyService.NET_WRAPPER.get_results(request.data['images']))
+        content = dict(results=ContentClassifyService.NET_WRAPPER.get_results(request))
         return Response(content)
 
 
@@ -69,5 +82,5 @@ class FoodClassifyService(APIView):
     @parser_classes((JSONParser,))
     @renderer_classes((JSONRenderer,))
     def post(self, request, format=None):
-        content = dict(results=FoodClassifyService.NET_WRAPPER.get_results(request.data['images']))
+        content = dict(results=FoodClassifyService.NET_WRAPPER.get_results(request))
         return Response(content)

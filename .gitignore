@@ -5,3 +5,4 @@
 *.pyc
 *.[oa]
 *~
+ddrift_be_img_server/static/*

@@ -22,10 +22,7 @@ SECRET_KEY = '5*!-wr@95*-^833soh3n9w*ia-u9hix+vu=61sqm4z5y-7if6e'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-TEMPLATE_DEBUG = True
-
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -51,6 +48,23 @@ MIDDLEWARE_CLASSES = (
 )
 
 ROOT_URLCONF = 'ddrift_be_img_server.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+            'debug': True,
+        },
+    },
+]
 
 WSGI_APPLICATION = 'ddrift_be_img_server.wsgi.application'
 
